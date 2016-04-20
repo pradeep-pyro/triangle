@@ -1,8 +1,8 @@
 package triangle
 
 /*
-#cgo CFLAGS: -I. -w
-#cgo LDFLAGS: -L${SRCDIR} -ltriangle
+#cgo CFLAGS: -I.
+#cgo LDFLAGS: ${SRCDIR}/libtriangle.a
 #include "triangle.h"
 #include <stdlib.h>
 */
@@ -43,53 +43,19 @@ func (t *triangulateIO) NumberOfTriangles() int {
 }
 
 func (t *triangulateIO) Normals() [][2]float64 {
-	num := t.NumberOfEdges()
-	sz := num * 2
-	slice := (*[1 << 30]C.double)(unsafe.Pointer(t.ct.normlist))[:sz:sz]
-
-	result := make([][2]float64, num)
-	for i := 0; i < num; i++ {
-		j := i * 2
-		result[i] = [2]float64{float64(slice[j]), float64(slice[j+1])}
-	}
-	return result
+	return cArrToFlt64Slice2D(unsafe.Pointer(t.ct.normlist), t.NumberOfEdges())
 }
 
 func (t *triangulateIO) Edges() [][2]int {
-	numEdges := t.NumberOfEdges()
-	sz := numEdges * 2
-	slice := (*[1 << 30]C.int)(unsafe.Pointer(t.ct.edgelist))[:sz:sz]
-
-	result := make([][2]int, numEdges)
-	for i := 0; i < numEdges; i++ {
-		j := i * 2
-		result[i] = [2]int{int(slice[j]), int(slice[j+1])}
-	}
-	return result
+	return cArrToIntSlice2D(unsafe.Pointer(t.ct.edgelist), t.NumberOfEdges())
 }
 
 func (t *triangulateIO) Points() [][2]float64 {
-	numPoints := t.NumberOfPoints()
-	sz := numPoints * 2
-	slice := (*[1 << 30]C.double)(unsafe.Pointer(t.ct.pointlist))[:sz:sz]
-
-	result := make([][2]float64, numPoints)
-	for i := 0; i < numPoints; i++ {
-		j := i * 2
-		result[i] = [2]float64{float64(slice[j]), float64(slice[j+1])}
-	}
-	return result
+	return cArrToFlt64Slice2D(unsafe.Pointer(t.ct.pointlist), t.NumberOfPoints())
 }
 
 func (t *triangulateIO) PointMarkers() []int {
-	sz := t.NumberOfPoints()
-	slice := (*[1 << 30]C.int)(unsafe.Pointer(t.ct.pointmarkerlist))[:sz:sz]
-
-	result := make([]int, sz)
-	for i := 0; i < sz; i++ {
-		result[i] = int(slice[i])
-	}
-	return result
+	return cArrToIntSlice(unsafe.Pointer(t.ct.pointmarkerlist), t.NumberOfPoints())
 }
 
 func (t *triangulateIO) SetEdges(edges [][2]int) {
@@ -123,17 +89,7 @@ func (t *triangulateIO) SetTriangleAreas(areas []float64) {
 }
 
 func (t *triangulateIO) Triangles() [][3]int {
-	numTriangles := t.NumberOfTriangles()
-	numCorners := int(t.ct.numberofcorners)
-	sz := numTriangles * numCorners
-	slice := (*[1 << 30]C.int)(unsafe.Pointer(t.ct.trianglelist))[:sz:sz]
-
-	result := make([][3]int, numTriangles)
-	for i := 0; i < numTriangles; i++ {
-		j := i * numCorners
-		result[i] = [3]int{int(slice[j]), int(slice[j+1]), int(slice[j+2])}
-	}
-	return result
+	return cArrToIntSlice3D(unsafe.Pointer(t.ct.trianglelist), t.NumberOfTriangles())
 }
 
 func triang(opt string, in, out, vorout *triangulateIO) {
@@ -144,4 +100,55 @@ func triang(opt string, in, out, vorout *triangulateIO) {
 	} else {
 		C.triangulate(copt, in.ct, out.ct, vorout.ct)
 	}
+}
+
+func cArrToIntSlice(ptr unsafe.Pointer, length int) []int {
+	slice := (*[1 << 30]C.int)(ptr)[:length:length]
+	result := make([]int, length)
+	for i := 0; i < length; i++ {
+		result[i] = int(slice[i])
+	}
+	return result
+}
+
+func cArrToIntSlice2D(ptr unsafe.Pointer, length int) [][2]int {
+	sz := length * 2
+	slice := (*[1 << 30]C.int)(ptr)[:sz:sz]
+	result := make([][2]int, length)
+	for i := 0; i < length; i++ {
+		j := i * 2
+		result[i] = [2]int{int(slice[j]), int(slice[j+1])}
+	}
+	return result
+}
+
+func cArrToIntSlice3D(ptr unsafe.Pointer, length int) [][3]int {
+	sz := length * 3
+	slice := (*[1 << 30]C.int)(ptr)[:sz:sz]
+	result := make([][3]int, length)
+	for i := 0; i < length; i++ {
+		j := i * 3
+		result[i] = [3]int{int(slice[j]), int(slice[j+1]), int(slice[j+2])}
+	}
+	return result
+}
+
+func cArrToFlt64Slice(ptr unsafe.Pointer, length int) []float64 {
+	slice := (*[1 << 30]C.double)(ptr)[:length:length]
+	result := make([]float64, length)
+	for i := 0; i < length; i++ {
+		result[i] = float64(slice[i])
+	}
+	return result
+}
+
+func cArrToFlt64Slice2D(ptr unsafe.Pointer, length int) [][2]float64 {
+	sz := length * 2
+	slice := (*[1 << 30]C.double)(ptr)[:sz:sz]
+	result := make([][2]float64, length)
+	for i := 0; i < length; i++ {
+		j := i * 2
+		result[i] = [2]float64{float64(slice[j]), float64(slice[j+1])}
+	}
+	return result
 }
