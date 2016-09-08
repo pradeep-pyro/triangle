@@ -13,7 +13,7 @@ type triangulateIO struct {
 	ct *C.struct_triangulateio
 }
 
-func newTriangulateIO() *triangulateIO {
+func NewTriangulateIO() *triangulateIO {
 	t := triangulateIO{}
 	t.ct = (*C.struct_triangulateio)(C.malloc(C.sizeof_struct_triangulateio))
 	if t.ct == nil {
@@ -22,12 +22,16 @@ func newTriangulateIO() *triangulateIO {
 	return &t
 }
 
-func freeTriangulateIO(t *triangulateIO) {
+func FreeTriangulateIO(t *triangulateIO) {
 	C.free(unsafe.Pointer(t.ct))
 }
 
 func (t *triangulateIO) NumberOfEdges() int {
 	return int(t.ct.numberofedges)
+}
+
+func (t *triangulateIO) NumberOfHoles() int {
+	return int(t.ct.numberofholes)
 }
 
 func (t *triangulateIO) NumberOfPoints() int {
@@ -73,10 +77,11 @@ func (t *triangulateIO) SetPointMarkers(markers []int) {
 }
 
 func (t *triangulateIO) SetSegments(segments [][2]int) {
-	t.ct.segmentlist = (*C.int)(unsafe.Pointer(&segments[0]))
+	t.ct.segmentlist = (*C.int)(unsafe.Pointer(&segments[0][0]))
+	t.ct.numberofsegments = C.int(len(segments))
 }
 
-func (t *triangulateIO) SetSegmentMarkers(markers [][2]int) {
+func (t *triangulateIO) SetSegmentMarkers(markers []int) {
 	t.ct.segmentmarkerlist = (*C.int)(unsafe.Pointer(&markers[0]))
 }
 
@@ -86,6 +91,11 @@ func (t *triangulateIO) SetTriangles(tri [][3]int) {
 
 func (t *triangulateIO) SetTriangleAreas(areas []float64) {
 	t.ct.trianglearealist = (*C.double)(unsafe.Pointer(&areas[0]))
+}
+
+func (t *triangulateIO) SetHoles(holes [][2]float64) {
+	t.ct.holelist = (*C.double)(unsafe.Pointer(&holes[0][0]))
+	t.ct.numberofholes = C.int(len(holes))
 }
 
 func (t *triangulateIO) Triangles() [][3]int {
