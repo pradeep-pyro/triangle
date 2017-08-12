@@ -48,7 +48,7 @@ vertices, edges, rayOrigins, rayDirections := triangle.Voronoi(pts)
 // [[-0.660 -0.778] [-0.240 -0.986] ... [0.550 -0.840]]
 ```
 
-[spiralDelVor](http://i.imgur.com/WD7MO2l.png)
+![spiralDelVor](http://i.imgur.com/WD7MO2l.png)
 
 Constrained triangulation can be performed using the `Triangulate()` function.
 For example, per-triangle angle and area constraints can be set as follows:
@@ -64,6 +64,6 @@ out := triangle.Triangulate(in, opt, false)
 // and out.Triangles()
 ```
 
-[spiralConstrained](http://i.imgur.com/Nb2XRPX.png)
+![spiralConstrained](http://i.imgur.com/Nb2XRPX.png)
 
 [Triangle library]: https://www.cs.cmu.edu/~quake/triangle.html
