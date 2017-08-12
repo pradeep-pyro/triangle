@@ -1,8 +1,6 @@
 package triangle
 
 /*
-#cgo CFLAGS: -I. -Wno-error
-#cgo LDFLAGS: ${SRCDIR}/libtriangle.a
 #include "triangle.h"
 #include <stdlib.h>
 */
@@ -19,6 +17,29 @@ func NewTriangulateIO() *triangulateIO {
 	if t.ct == nil {
 		panic("Unable to allocate memory")
 	}
+	t.ct.edgelist = nil
+	t.ct.edgemarkerlist = nil
+	t.ct.holelist = nil
+	t.ct.neighborlist = nil
+	t.ct.normlist = nil
+	t.ct.numberofcorners = 0
+	t.ct.numberofedges = 0
+	t.ct.numberofholes = 0
+	t.ct.numberofpointattributes = 0
+	t.ct.numberofpoints = 0
+	t.ct.numberofregions = 0
+	t.ct.numberofsegments = 0
+	t.ct.numberoftriangleattributes = 0
+	t.ct.numberoftriangles = 0
+	t.ct.pointattributelist = nil
+	t.ct.pointlist = nil
+	t.ct.pointmarkerlist = nil
+	t.ct.regionlist = nil
+	t.ct.segmentlist = nil
+	t.ct.segmentmarkerlist = nil
+	t.ct.trianglearealist = nil
+	t.ct.triangleattributelist = nil
+	t.ct.trianglelist = nil
 	return &t
 }
 
