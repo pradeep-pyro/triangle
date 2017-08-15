@@ -107,10 +107,35 @@ func Voronoi(pts [][2]float64) ([][2]float64, [][2]int32, []int32, [][2]float64)
 	return verts, edges, rayOrigins, rayDirs
 }
 
-// Triangulate performs constrained Delaunay triangulation.
-// Constraints and quality options can be set using the second argument.
+// ConformingDelaunay computes the true Delaunay triangulation of a planar
+// straight line graph with the given vertices, edges and holes.
+// New vertices (Steiner points) may be inserted to ensure that the resulting
+// triangles are all Delaunay.
+func ConformingDelaunay(pts [][2]float64, segs [][2]int32,
+	holes [][2]float64) ([][2]float64, [][3]int32) {
+	in := NewTriangulateIO()
+	out := NewTriangulateIO()
+	defer FreeTriangulateIO(in)
+	defer FreeTriangulateIO(out)
+
+	in.SetPoints(pts)
+	in.SetPointMarkers(make([]int32, len(pts)))
+	in.SetSegments(segs)
+	in.SetSegmentMarkers(make([]int32, len(segs)))
+	in.SetHoles(holes)
+	triang("QzpD", in, out, nil)
+
+	verts := out.Points()
+	triangles := out.Triangles()
+	return verts, triangles
+}
+
+// Triangulate is the closest wrapper to the C code and can be used for
+// flexible needs. Flags, constraints and quality options can be set using
+// the second argument.
 // Holes and segments that must appear in the triangulation can be set
-// using methods (SetSegments() and SetHoles()) in the input triangulateIO struct.
+// using methods (SetSegments() and SetHoles()) in the input triangulateIO
+// struct.
 //
 // Note that FreeTriangulateIO() has to be called explicitly on the in and out
 // to release the memory.
