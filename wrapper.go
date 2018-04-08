@@ -4,6 +4,7 @@ package triangle
 #include "triangle.h"
 #include <stdlib.h>
 */
+// #cgo LDFLAGS: -lm
 import "C"
 import "unsafe"
 
