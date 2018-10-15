@@ -1,0 +1,16 @@
+sudo: false
+language: go
+go:
+  - 1.9.x
+  - 1.10.x
+  - 1.11.x
+
+install: go get -v -t github.com/pradeep-pyro/triangle
+
+script:
+  - go build ./
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always

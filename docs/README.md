@@ -1,4 +1,7 @@
 # Go wrapper for triangle
+
+[![Build Status](https://travis-ci.org/pradeep-pyro/triangle.svg?branch=master)](https://travis-ci.org/pradeep-pyro/triangle)
+
 This package is a wrapper for the [Triangle library] originally written in C by Jonathan Shewchuk. Features include
 
  - constrained & conforming Delaunay triangulation
@@ -43,7 +46,10 @@ vertices, edges, rayOrigins, rayDirections := triangle.Voronoi(pts)
 // Direction vectors for rays in rayOrigins
 // [[-0.660 -0.778] [-0.240 -0.986] ... [0.550 -0.840]]
 ```
-![](http://i.imgur.com/WD7MO2l.png)
+
+| Delaunay triangulation | Voronoi diagram |
+| :---: | :---: |
+| ![](images/delaunay.png) | ![](images/voronoi.png) |
 
 #### Constrained and conforming Delaunay triangulation of PSLGs
 Functions `ConformingDelaunay()` and `ConstrainedDelaunay()` accept a PSLG as input.
@@ -77,8 +83,9 @@ verts, faces := triangle.ConstrainedDelaunay(pts, segs, holes)
 verts, faces := triangle.ConformingDelaunay(pts, segs, holes)
 ```
 
-![](http://i.imgur.com/vmSHI2U.png)
-![](http://i.imgur.com/9fh6cbW.png)
+| Constrained Delaunay | Conforming Delaunay |
+| :---: | :---: |
+| ![](images/constrained_del.png) | ![](images/conforming_del.png) |
 
 The function `Triangulate()` can be used for more fine grained control.
 Example usage for per-triangle angle and area constraints:
@@ -95,6 +102,7 @@ out := triangle.Triangulate(in, opt, false)
 triangle.FreeTriangulateIO(in)
 triangle.FreeTriangulateIO(out)
 ```
-![](http://i.imgur.com/Nb2XRPX.png)
+
+![](images/custom_del.png)
 
 [Triangle library]: https://www.cs.cmu.edu/~quake/triangle.html
