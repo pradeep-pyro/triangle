@@ -6,7 +6,21 @@ package triangle
 */
 // #cgo LDFLAGS: -lm
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
+
+// The allocations here are using C.malloc and C.free over trimalloc and
+// trifree, as C.malloc works the same but gives a better error report in cases
+// if we go out of memory.
+
+func trimalloc(size C.ulong) unsafe.Pointer {
+	return C.malloc(size)
+}
+
+func trifree(ptr unsafe.Pointer) {
+	C.free(ptr)
+}
 
 type triangulateIO struct {
 	ct *C.struct_triangulateio
@@ -14,7 +28,7 @@ type triangulateIO struct {
 
 func NewTriangulateIO() *triangulateIO {
 	t := triangulateIO{}
-	t.ct = (*C.struct_triangulateio)(C.malloc(C.sizeof_struct_triangulateio))
+	t.ct = (*C.struct_triangulateio)(trimalloc(C.sizeof_struct_triangulateio))
 	if t.ct == nil {
 		panic("Unable to allocate memory")
 	}
@@ -45,7 +59,24 @@ func NewTriangulateIO() *triangulateIO {
 }
 
 func FreeTriangulateIO(t *triangulateIO) {
-	C.free(unsafe.Pointer(t.ct))
+	trifree(unsafe.Pointer(t.ct.edgelist))
+	trifree(unsafe.Pointer(t.ct.edgemarkerlist))
+
+	// trifree(unsafe.Pointer(t.ct.holelist))
+	// hole list is reused in both in and out of ConstrainedDelaunay
+
+	trifree(unsafe.Pointer(t.ct.neighborlist))
+	trifree(unsafe.Pointer(t.ct.normlist))
+	trifree(unsafe.Pointer(t.ct.pointattributelist))
+	trifree(unsafe.Pointer(t.ct.pointlist))
+	trifree(unsafe.Pointer(t.ct.pointmarkerlist))
+	trifree(unsafe.Pointer(t.ct.regionlist))
+	trifree(unsafe.Pointer(t.ct.segmentlist))
+	trifree(unsafe.Pointer(t.ct.segmentmarkerlist))
+	trifree(unsafe.Pointer(t.ct.trianglearealist))
+	trifree(unsafe.Pointer(t.ct.triangleattributelist))
+	trifree(unsafe.Pointer(t.ct.trianglelist))
+	trifree(unsafe.Pointer(t.ct))
 }
 
 func (t *triangulateIO) NumberOfEdges() int {
@@ -89,39 +120,45 @@ func (t *triangulateIO) Segments() [][2]int32 {
 }
 
 func (t *triangulateIO) SetEdges(edges [][2]int32) {
-	t.ct.edgelist = (*C.int)(unsafe.Pointer(&edges[0][0]))
-	t.ct.numberofedges = C.int(len(edges))
+	trifree(unsafe.Pointer(t.ct.edgelist))
+	t.ct.edgelist, t.ct.numberofedges = intSlice2DToCArr(edges)
 }
 
 func (t *triangulateIO) SetPoints(pts [][2]float64) {
-	t.ct.pointlist = (*C.double)(unsafe.Pointer(&pts[0]))
-	t.ct.numberofpoints = C.int(len(pts))
+	trifree(unsafe.Pointer(t.ct.pointlist))
+	t.ct.pointlist, t.ct.numberofpoints = flt64Slice2DToCArr(pts)
 }
 
 func (t *triangulateIO) SetPointMarkers(markers []int32) {
-	t.ct.pointmarkerlist = (*C.int)(unsafe.Pointer(&markers[0]))
+	trifree(unsafe.Pointer(t.ct.pointmarkerlist))
+	t.ct.pointmarkerlist, _ = intSliceToCArr(markers)
 }
 
 func (t *triangulateIO) SetSegments(segments [][2]int32) {
-	t.ct.segmentlist = (*C.int)(unsafe.Pointer(&segments[0][0]))
-	t.ct.numberofsegments = C.int(len(segments))
+	trifree(unsafe.Pointer(t.ct.segmentlist))
+	t.ct.segmentlist, t.ct.numberofsegments = intSlice2DToCArr(segments)
 }
 
 func (t *triangulateIO) SetSegmentMarkers(markers []int32) {
-	t.ct.segmentmarkerlist = (*C.int)(unsafe.Pointer(&markers[0]))
+	trifree(unsafe.Pointer(t.ct.segmentmarkerlist))
+	t.ct.segmentmarkerlist, _ = intSliceToCArr(markers)
 }
 
 func (t *triangulateIO) SetTriangles(tri [][3]int32) {
-	t.ct.trianglelist = (*C.int)(unsafe.Pointer(&tri[0][0]))
+	trifree(unsafe.Pointer(t.ct.trianglelist))
+	t.ct.trianglelist, t.ct.numberoftriangles = intSlice3DToCArr(tri)
 }
 
 func (t *triangulateIO) SetTriangleAreas(areas []float64) {
-	t.ct.trianglearealist = (*C.double)(unsafe.Pointer(&areas[0]))
+	trifree(unsafe.Pointer(t.ct.trianglearealist))
+	t.ct.trianglearealist, _ = flt64SliceToCArr(areas)
 }
 
 func (t *triangulateIO) SetHoles(holes [][2]float64) {
-	t.ct.holelist = (*C.double)(unsafe.Pointer(&holes[0][0]))
-	t.ct.numberofholes = C.int(len(holes))
+	if t.ct.holelist != nil {
+		trifree(unsafe.Pointer(t.ct.holelist))
+	}
+	t.ct.holelist, t.ct.numberofholes = flt64Slice2DToCArr(holes)
 }
 
 func (t *triangulateIO) Triangles() [][3]int32 {
@@ -130,7 +167,7 @@ func (t *triangulateIO) Triangles() [][3]int32 {
 
 func triang(opt string, in, out, vorout *triangulateIO) {
 	copt := C.CString(opt)
-	defer C.free(unsafe.Pointer(copt))
+	defer trifree(unsafe.Pointer(copt))
 	if vorout == nil {
 		C.triangulate(copt, in.ct, out.ct, nil)
 	} else {
@@ -178,4 +215,61 @@ func cArrToFlt64Slice2D(ptr *C.double, length int) [][2]float64 {
 		result[i] = [2]float64{float64(slice[j]), float64(slice[j+1])}
 	}
 	return result
+}
+
+func intSliceToCArr(slice []int32) (*C.int, C.int) {
+	sz := len(slice)
+	ptr := (*C.int)(trimalloc(C.sizeof_int * (C.ulong)(sz)))
+	cArr := (*[1 << 30]C.int)(unsafe.Pointer(ptr))[:sz:sz]
+	for i := range slice {
+		cArr[i] = C.int(slice[i])
+	}
+	return ptr, C.int(len(slice))
+}
+
+func intSlice2DToCArr(slice [][2]int32) (*C.int, C.int) {
+	sz := 2 * len(slice)
+	ptr := (*C.int)(trimalloc(C.sizeof_int * (C.ulong)(sz)))
+	cArr := (*[1 << 30]C.int)(unsafe.Pointer(ptr))[:sz:sz]
+	for i := range slice {
+		j := 2 * i
+		cArr[j] = C.int(slice[i][0])
+		cArr[j+1] = C.int(slice[i][1])
+	}
+	return ptr, C.int(len(slice))
+}
+
+func intSlice3DToCArr(slice [][3]int32) (*C.int, C.int) {
+	sz := 3 * len(slice)
+	ptr := (*C.int)(trimalloc(C.sizeof_int * (C.ulong)(sz)))
+	cArr := (*[1 << 30]C.int)(unsafe.Pointer(ptr))[:sz:sz]
+	for i := range slice {
+		j := 3 * i
+		cArr[j] = C.int(slice[i][0])
+		cArr[j+1] = C.int(slice[i][1])
+		cArr[j+2] = C.int(slice[i][2])
+	}
+	return ptr, C.int(len(slice))
+}
+
+func flt64SliceToCArr(slice []float64) (*C.double, C.int) {
+	sz := len(slice)
+	ptr := (*C.double)(trimalloc(C.sizeof_double * (C.ulong)(sz)))
+	cArr := (*[1 << 30]C.double)(unsafe.Pointer(ptr))[:sz:sz]
+	for i := range slice {
+		cArr[i] = C.double(slice[i])
+	}
+	return ptr, C.int(len(slice))
+}
+
+func flt64Slice2DToCArr(slice [][2]float64) (*C.double, C.int) {
+	sz := 2 * len(slice)
+	ptr := (*C.double)(trimalloc(C.sizeof_double * (C.ulong)(sz)))
+	cArr := (*[1 << 30]C.double)(unsafe.Pointer(ptr))[:sz:sz]
+	for i := range slice {
+		j := i * 2
+		cArr[j] = C.double(slice[i][0])
+		cArr[j+1] = C.double(slice[i][1])
+	}
+	return ptr, C.int(len(slice))
 }
