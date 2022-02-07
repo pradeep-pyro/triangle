@@ -69,23 +69,23 @@ func (t *triangulateIO) NumberOfTriangles() int {
 }
 
 func (t *triangulateIO) Normals() [][2]float64 {
-	return cArrToFlt64Slice2D(unsafe.Pointer(t.ct.normlist), t.NumberOfEdges())
+	return cArrToFlt64Slice2D(t.ct.normlist, t.NumberOfEdges())
 }
 
 func (t *triangulateIO) Edges() [][2]int32 {
-	return cArrToIntSlice2D(unsafe.Pointer(t.ct.edgelist), t.NumberOfEdges())
+	return cArrToIntSlice2D(t.ct.edgelist, t.NumberOfEdges())
 }
 
 func (t *triangulateIO) Points() [][2]float64 {
-	return cArrToFlt64Slice2D(unsafe.Pointer(t.ct.pointlist), t.NumberOfPoints())
+	return cArrToFlt64Slice2D(t.ct.pointlist, t.NumberOfPoints())
 }
 
 func (t *triangulateIO) PointMarkers() []int32 {
-	return cArrToIntSlice(unsafe.Pointer(t.ct.pointmarkerlist), t.NumberOfPoints())
+	return cArrToIntSlice(t.ct.pointmarkerlist, t.NumberOfPoints())
 }
 
 func (t *triangulateIO) Segments() [][2]int32 {
-	return cArrToIntSlice2D(unsafe.Pointer(t.ct.segmentlist), t.NumberOfSegments())
+	return cArrToIntSlice2D(t.ct.segmentlist, t.NumberOfSegments())
 }
 
 func (t *triangulateIO) SetEdges(edges [][2]int32) {
@@ -125,7 +125,7 @@ func (t *triangulateIO) SetHoles(holes [][2]float64) {
 }
 
 func (t *triangulateIO) Triangles() [][3]int32 {
-	return cArrToIntSlice3D(unsafe.Pointer(t.ct.trianglelist), t.NumberOfTriangles())
+	return cArrToIntSlice3D(t.ct.trianglelist, t.NumberOfTriangles())
 }
 
 func triang(opt string, in, out, vorout *triangulateIO) {
@@ -138,8 +138,8 @@ func triang(opt string, in, out, vorout *triangulateIO) {
 	}
 }
 
-func cArrToIntSlice(ptr unsafe.Pointer, length int) []int32 {
-	slice := (*[1 << 30]C.int)(ptr)[:length:length]
+func cArrToIntSlice(ptr *C.int, length int) []int32 {
+	slice := (*[1 << 30]C.int)(unsafe.Pointer(ptr))[:length:length]
 	result := make([]int32, length)
 	for i := 0; i < length; i++ {
 		result[i] = int32(slice[i])
@@ -147,9 +147,9 @@ func cArrToIntSlice(ptr unsafe.Pointer, length int) []int32 {
 	return result
 }
 
-func cArrToIntSlice2D(ptr unsafe.Pointer, length int) [][2]int32 {
+func cArrToIntSlice2D(ptr *C.int, length int) [][2]int32 {
 	sz := length * 2
-	slice := (*[1 << 30]C.int)(ptr)[:sz:sz]
+	slice := (*[1 << 30]C.int)(unsafe.Pointer(ptr))[:sz:sz]
 	result := make([][2]int32, length)
 	for i := 0; i < length; i++ {
 		j := i * 2
@@ -158,9 +158,9 @@ func cArrToIntSlice2D(ptr unsafe.Pointer, length int) [][2]int32 {
 	return result
 }
 
-func cArrToIntSlice3D(ptr unsafe.Pointer, length int) [][3]int32 {
+func cArrToIntSlice3D(ptr *C.int, length int) [][3]int32 {
 	sz := length * 3
-	slice := (*[1 << 30]C.int)(ptr)[:sz:sz]
+	slice := (*[1 << 30]C.int)(unsafe.Pointer(ptr))[:sz:sz]
 	result := make([][3]int32, length)
 	for i := 0; i < length; i++ {
 		j := i * 3
@@ -169,18 +169,9 @@ func cArrToIntSlice3D(ptr unsafe.Pointer, length int) [][3]int32 {
 	return result
 }
 
-func cArrToFlt64Slice(ptr unsafe.Pointer, length int) []float64 {
-	slice := (*[1 << 30]C.double)(ptr)[:length:length]
-	result := make([]float64, length)
-	for i := 0; i < length; i++ {
-		result[i] = float64(slice[i])
-	}
-	return result
-}
-
-func cArrToFlt64Slice2D(ptr unsafe.Pointer, length int) [][2]float64 {
+func cArrToFlt64Slice2D(ptr *C.double, length int) [][2]float64 {
 	sz := length * 2
-	slice := (*[1 << 30]C.double)(ptr)[:sz:sz]
+	slice := (*[1 << 30]C.double)(unsafe.Pointer(ptr))[:sz:sz]
 	result := make([][2]float64, length)
 	for i := 0; i < length; i++ {
 		j := i * 2
