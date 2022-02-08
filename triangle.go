@@ -3,6 +3,7 @@ package triangle
 import (
 	"fmt"
 	"strconv"
+	"unsafe"
 )
 
 type SegmentSplitting uint8
@@ -116,6 +117,8 @@ func ConstrainedDelaunay(pts [][2]float64, segs [][2]int32,
 	in := NewTriangulateIO()
 	out := NewTriangulateIO()
 	defer FreeTriangulateIO(in)
+	// this is duplicated in out, so free it only once
+	defer trifree(unsafe.Pointer(in.ct.holelist))
 	defer FreeTriangulateIO(out)
 
 	in.SetPoints(pts)
@@ -139,6 +142,8 @@ func ConformingDelaunay(pts [][2]float64, segs [][2]int32,
 	in := NewTriangulateIO()
 	out := NewTriangulateIO()
 	defer FreeTriangulateIO(in)
+	// this is duplicated in out, so free it only once
+	defer trifree(unsafe.Pointer(in.ct.holelist))
 	defer FreeTriangulateIO(out)
 
 	in.SetPoints(pts)
